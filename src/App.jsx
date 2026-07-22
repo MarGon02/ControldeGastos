@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
 import Cuentas from './components/Cuentas'
 import Movimientos from './components/Movimientos'
+import Categorias from './components/Categorias'
 
 export default function App() {
   const [sesion, setSesion] = useState(null)
@@ -10,6 +11,8 @@ export default function App() {
 
   const [cuentas, setCuentas] = useState([])
   const [cargandoCuentas, setCargandoCuentas] = useState(true)
+  const [categorias, setCategorias] = useState([])
+  const [cargandoCategorias, setCargandoCategorias] = useState(true)
   const [version, setVersion] = useState(0) // se incrementa para forzar recarga
 
   useEffect(() => {
@@ -54,9 +57,19 @@ export default function App() {
     setCargandoCuentas(false)
   }, [])
 
+  const cargarCategorias = useCallback(async () => {
+    setCargandoCategorias(true)
+    const { data } = await supabase.from('categoria').select('*').order('nombre')
+    setCategorias(data || [])
+    setCargandoCategorias(false)
+  }, [])
+
   useEffect(() => {
-    if (sesion) cargarCuentas()
-  }, [sesion, version, cargarCuentas])
+    if (sesion) {
+      cargarCuentas()
+      cargarCategorias()
+    }
+  }, [sesion, version, cargarCuentas, cargarCategorias])
 
   const refrescar = () => setVersion((v) => v + 1)
 
@@ -80,7 +93,8 @@ export default function App() {
       <p style={estilos.email}>{sesion.user.email}</p>
 
       <Cuentas cuentas={cuentas} cargando={cargandoCuentas} onCambio={refrescar} />
-      <Movimientos cuentas={cuentas} onCambio={refrescar} />
+      <Movimientos cuentas={cuentas} categorias={categorias} onCambio={refrescar} />
+      <Categorias categorias={categorias} cargando={cargandoCategorias} onCambio={refrescar} />
     </main>
   )
 }

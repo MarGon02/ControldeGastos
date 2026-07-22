@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatoGs, hoyISO, fechaCorta } from '../lib/formato'
 
-export default function Movimientos({ cuentas, onCambio }) {
+export default function Movimientos({ cuentas, categorias, onCambio }) {
   const [movimientos, setMovimientos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -14,6 +14,7 @@ export default function Movimientos({ cuentas, onCambio }) {
   const [monto, setMonto] = useState('')
   const [fecha, setFecha] = useState(hoyISO())
   const [descripcion, setDescripcion] = useState('')
+  const [categoriaId, setCategoriaId] = useState('')
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function Movimientos({ cuentas, onCambio }) {
     // Traemos los movimientos y, de cada uno, el nombre de su cuenta.
     const { data, error } = await supabase
       .from('movimiento')
-      .select('*, cuenta(nombre)')
+      .select('*, cuenta(nombre), categoria(nombre)')
       .order('fecha', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(50)
@@ -54,6 +55,7 @@ export default function Movimientos({ cuentas, onCambio }) {
       monto: Number(monto),
       fecha,
       descripcion: descripcion || null,
+      categoria_id: categoriaId || null,
       estado: 'pagado',
     })
 
@@ -62,6 +64,7 @@ export default function Movimientos({ cuentas, onCambio }) {
     } else {
       setMonto('')
       setDescripcion('')
+      setCategoriaId('')
       setFecha(hoyISO())
       setMostrarForm(false)
       await cargarMovimientos()
@@ -80,6 +83,9 @@ export default function Movimientos({ cuentas, onCambio }) {
       if (onCambio) onCambio()
     }
   }
+
+  // Solo mostramos las categorias que coinciden con el tipo elegido.
+  const categoriasFiltradas = (categorias || []).filter((c) => c.tipo === tipo)
 
   const sinCuentas = cuentas.length === 0
 
@@ -141,6 +147,17 @@ export default function Movimientos({ cuentas, onCambio }) {
             required
           />
 
+          <select
+            style={estilos.input}
+            value={categoriaId}
+            onChange={(e) => setCategoriaId(e.target.value)}
+          >
+            <option value="">Sin categoria</option>
+            {categoriasFiltradas.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+
           <input
             style={estilos.input}
             type="date"
@@ -181,6 +198,7 @@ export default function Movimientos({ cuentas, onCambio }) {
                   </div>
                   <div style={estilos.itemDetalle}>
                     {fechaCorta(m.fecha)} · {m.cuenta?.nombre || 'Sin cuenta'}
+                    {m.categoria?.nombre ? ` · ${m.categoria.nombre}` : ''}
                   </div>
                 </div>
                 <div style={estilos.derecha}>
