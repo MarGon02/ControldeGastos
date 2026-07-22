@@ -1,16 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
 import Cuentas from './components/Cuentas'
+import Movimientos from './components/Movimientos'
 
 export default function App() {
   const [sesion, setSesion] = useState(null)
-  const [cargando, setCargando] = useState(true)
+  const [cargandoSesion, setCargandoSesion] = useState(true)
+
+  const [cuentas, setCuentas] = useState([])
+  const [cargandoCuentas, setCargandoCuentas] = useState(true)
+  const [version, setVersion] = useState(0) // se incrementa para forzar recarga
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSesion(data.session)
-      setCargando(false)
+      setCargandoSesion(false)
     })
 
     const {
@@ -22,7 +27,40 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  if (cargando) {
+  // Carga las cuentas y les calcula el saldo real usando los movimientos.
+  const cargarCuentas = useCallback(async () => {
+    setCargandoCuentas(true)
+
+    const [resCuentas, resMovs] = await Promise.all([
+      supabase.from('cuenta').select('*').eq('archivada', false).order('created_at'),
+      supabase.from('movimiento').select('cuenta_id, tipo, monto').eq('estado', 'pagado'),
+    ])
+
+    const listaCuentas = resCuentas.data || []
+    const movs = resMovs.data || []
+
+    const conSaldo = listaCuentas.map((c) => {
+      const delta = movs
+        .filter((m) => m.cuenta_id === c.id)
+        .reduce((suma, m) => {
+          const entra = m.tipo === 'ingreso' || m.tipo === 'transferencia_entrada'
+          return suma + (entra ? Number(m.monto) : -Number(m.monto))
+        }, 0)
+
+      return { ...c, saldo: Number(c.saldo_inicial) + delta }
+    })
+
+    setCuentas(conSaldo)
+    setCargandoCuentas(false)
+  }, [])
+
+  useEffect(() => {
+    if (sesion) cargarCuentas()
+  }, [sesion, version, cargarCuentas])
+
+  const refrescar = () => setVersion((v) => v + 1)
+
+  if (cargandoSesion) {
     return <p style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>Cargando...</p>
   }
 
@@ -41,7 +79,8 @@ export default function App() {
 
       <p style={estilos.email}>{sesion.user.email}</p>
 
-      <Cuentas />
+      <Cuentas cuentas={cuentas} cargando={cargandoCuentas} onCambio={refrescar} />
+      <Movimientos cuentas={cuentas} onCambio={refrescar} />
     </main>
   )
 }

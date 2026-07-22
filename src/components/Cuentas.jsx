@@ -1,44 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatoGs } from '../lib/formato'
 
 const TIPOS = ['efectivo', 'banco', 'tarjeta', 'ahorro', 'billetera']
 
-// Formatea numeros como guaranies: 1500000 -> "G 1.500.000"
-function formatoGs(valor) {
-  return 'G ' + Number(valor || 0).toLocaleString('es-PY')
-}
-
-export default function Cuentas() {
-  const [cuentas, setCuentas] = useState([])
-  const [cargando, setCargando] = useState(true)
+export default function Cuentas({ cuentas, cargando, onCambio }) {
   const [error, setError] = useState(null)
   const [mostrarForm, setMostrarForm] = useState(false)
 
-  // Campos del formulario
   const [nombre, setNombre] = useState('')
   const [tipo, setTipo] = useState('efectivo')
   const [saldoInicial, setSaldoInicial] = useState('')
   const [guardando, setGuardando] = useState(false)
-
-  useEffect(() => {
-    cargarCuentas()
-  }, [])
-
-  async function cargarCuentas() {
-    setCargando(true)
-    setError(null)
-
-    const { data, error } = await supabase
-      .from('cuenta')
-      .select('*')
-      .eq('archivada', false)
-      .order('created_at', { ascending: true })
-
-    if (error) setError(error.message)
-    else setCuentas(data)
-
-    setCargando(false)
-  }
 
   async function crearCuenta(e) {
     e.preventDefault()
@@ -54,18 +27,17 @@ export default function Cuentas() {
     if (error) {
       setError(error.message)
     } else {
-      // Limpiamos el formulario y recargamos la lista
       setNombre('')
       setTipo('efectivo')
       setSaldoInicial('')
       setMostrarForm(false)
-      await cargarCuentas()
+      if (onCambio) onCambio()
     }
 
     setGuardando(false)
   }
 
-  const total = cuentas.reduce((suma, c) => suma + Number(c.saldo_inicial), 0)
+  const total = cuentas.reduce((suma, c) => suma + c.saldo, 0)
 
   return (
     <section>
@@ -125,7 +97,7 @@ export default function Cuentas() {
                 <div style={estilos.itemNombre}>{c.nombre}</div>
                 <div style={estilos.itemTipo}>{c.tipo}</div>
               </div>
-              <div style={estilos.itemMonto}>{formatoGs(c.saldo_inicial)}</div>
+              <div style={estilos.itemMonto}>{formatoGs(c.saldo)}</div>
             </li>
           ))}
         </ul>
