@@ -9,8 +9,9 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
   const [mostrarForm, setMostrarForm] = useState(false)
 
   // Campos del formulario
-  const [tipo, setTipo] = useState('gasto')
+  const [tipo, setTipo] = useState('gasto') // 'gasto' | 'ingreso' | 'transferencia'
   const [cuentaId, setCuentaId] = useState('')
+  const [cuentaDestinoId, setCuentaDestinoId] = useState('')
   const [monto, setMonto] = useState('')
   const [fecha, setFecha] = useState(hoyISO())
   const [descripcion, setDescripcion] = useState('')
@@ -21,7 +22,6 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
     cargarMovimientos()
   }, [])
 
-  // Si todavia no hay cuenta elegida, seleccionamos la primera disponible.
   useEffect(() => {
     if (!cuentaId && cuentas.length > 0) setCuentaId(cuentas[0].id)
   }, [cuentas, cuentaId])
@@ -30,7 +30,6 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
     setCargando(true)
     setError(null)
 
-    // Traemos los movimientos y, de cada uno, el nombre de su cuenta.
     const { data, error } = await supabase
       .from('movimiento')
       .select('*, cuenta(nombre), categoria(nombre)')
@@ -46,9 +45,49 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
 
   async function crearMovimiento(e) {
     e.preventDefault()
-    setGuardando(true)
     setError(null)
 
+    if (tipo === 'transferencia') {
+      if (cuentaId === cuentaDestinoId) {
+        setError('La cuenta de origen y destino no pueden ser la misma.')
+        return
+      }
+      setGuardando(true)
+
+      // Las dos filas comparten este id para saber que son la misma transferencia.
+      const grupo = crypto.randomUUID()
+
+      // Se insertan juntas en una sola operacion: o entran las dos, o ninguna.
+      const { error } = await supabase.from('movimiento').insert([
+        {
+          cuenta_id: cuentaId,
+          tipo: 'transferencia_salida',
+          monto: Number(monto),
+          fecha,
+          descripcion: descripcion || null,
+          estado: 'pagado',
+          grupo_transf: grupo,
+        },
+        {
+          cuenta_id: cuentaDestinoId,
+          tipo: 'transferencia_entrada',
+          monto: Number(monto),
+          fecha,
+          descripcion: descripcion || null,
+          estado: 'pagado',
+          grupo_transf: grupo,
+        },
+      ])
+
+      if (error) setError(error.message)
+      else await limpiarYRefrescar()
+
+      setGuardando(false)
+      return
+    }
+
+    // Gasto o ingreso normal
+    setGuardando(true)
     const { error } = await supabase.from('movimiento').insert({
       cuenta_id: cuentaId,
       tipo,
@@ -59,23 +98,30 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
       estado: 'pagado',
     })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      setMonto('')
-      setDescripcion('')
-      setCategoriaId('')
-      setFecha(hoyISO())
-      setMostrarForm(false)
-      await cargarMovimientos()
-      if (onCambio) onCambio() // avisa a App para refrescar los saldos
-    }
+    if (error) setError(error.message)
+    else await limpiarYRefrescar()
 
     setGuardando(false)
   }
 
-  async function borrarMovimiento(id) {
-    const { error } = await supabase.from('movimiento').delete().eq('id', id)
+  async function limpiarYRefrescar() {
+    setMonto('')
+    setDescripcion('')
+    setCategoriaId('')
+    setFecha(hoyISO())
+    setMostrarForm(false)
+    await cargarMovimientos()
+    if (onCambio) onCambio()
+  }
+
+  async function borrarMovimiento(m) {
+    // Si es parte de una transferencia, borramos las dos filas juntas.
+    const consulta = m.grupo_transf
+      ? supabase.from('movimiento').delete().eq('grupo_transf', m.grupo_transf)
+      : supabase.from('movimiento').delete().eq('id', m.id)
+
+    const { error } = await consulta
+
     if (error) {
       setError(error.message)
     } else {
@@ -84,10 +130,21 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
     }
   }
 
-  // Solo mostramos las categorias que coinciden con el tipo elegido.
   const categoriasFiltradas = (categorias || []).filter((c) => c.tipo === tipo)
-
   const sinCuentas = cuentas.length === 0
+  const pocasCuentas = cuentas.length < 2
+  const esTransf = tipo === 'transferencia'
+
+  // Para no mostrar la transferencia dos veces, ocultamos la fila de entrada
+  // y en la de salida mostramos "origen -> destino".
+  const visibles = movimientos.filter((m) => m.tipo !== 'transferencia_entrada')
+
+  function nombreDestino(m) {
+    const par = movimientos.find(
+      (x) => x.grupo_transf === m.grupo_transf && x.tipo === 'transferencia_entrada'
+    )
+    return par?.cuenta?.nombre || '?'
+  }
 
   return (
     <section style={{ marginTop: 40 }}>
@@ -123,18 +180,49 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
             >
               Ingreso
             </button>
+            <button
+              type="button"
+              onClick={() => setTipo('transferencia')}
+              style={esTransf ? estilos.tabActivoTransf : estilos.tab}
+              disabled={pocasCuentas}
+              title={pocasCuentas ? 'Necesitas al menos 2 cuentas' : ''}
+            >
+              Transferencia
+            </button>
           </div>
 
-          <select
-            style={estilos.input}
-            value={cuentaId}
-            onChange={(e) => setCuentaId(e.target.value)}
-            required
-          >
-            {cuentas.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
+          <label style={estilos.label}>
+            {esTransf ? 'Desde' : 'Cuenta'}
+            <select
+              style={estilos.input}
+              value={cuentaId}
+              onChange={(e) => setCuentaId(e.target.value)}
+              required
+            >
+              {cuentas.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          {esTransf && (
+            <label style={estilos.label}>
+              Hacia
+              <select
+                style={estilos.input}
+                value={cuentaDestinoId}
+                onChange={(e) => setCuentaDestinoId(e.target.value)}
+                required
+              >
+                <option value="">Elegi la cuenta destino</option>
+                {cuentas
+                  .filter((c) => c.id !== cuentaId)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+              </select>
+            </label>
+          )}
 
           <input
             style={estilos.input}
@@ -147,16 +235,18 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
             required
           />
 
-          <select
-            style={estilos.input}
-            value={categoriaId}
-            onChange={(e) => setCategoriaId(e.target.value)}
-          >
-            <option value="">Sin categoria</option>
-            {categoriasFiltradas.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
+          {!esTransf && (
+            <select
+              style={estilos.input}
+              value={categoriaId}
+              onChange={(e) => setCategoriaId(e.target.value)}
+            >
+              <option value="">Sin categoria</option>
+              {categoriasFiltradas.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          )}
 
           <input
             style={estilos.input}
@@ -175,7 +265,7 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
           />
 
           <button style={estilos.botonPrimario} type="submit" disabled={guardando}>
-            {guardando ? 'Guardando...' : 'Guardar movimiento'}
+            {guardando ? 'Guardando...' : 'Guardar'}
           </button>
         </form>
       )}
@@ -184,30 +274,47 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
 
       {cargando ? (
         <p style={estilos.gris}>Cargando movimientos...</p>
-      ) : movimientos.length === 0 ? (
+      ) : visibles.length === 0 ? (
         <p style={estilos.gris}>Todavia no hay movimientos registrados.</p>
       ) : (
         <ul style={estilos.lista}>
-          {movimientos.map((m) => {
-            const esIngreso = m.tipo === 'ingreso' || m.tipo === 'transferencia_entrada'
+          {visibles.map((m) => {
+            const esSalidaTransf = m.tipo === 'transferencia_salida'
+            const esIngreso = m.tipo === 'ingreso'
+
+            let color = '#c0392b'
+            let signo = '-'
+            if (esIngreso) {
+              color = '#1e8449'
+              signo = '+'
+            } else if (esSalidaTransf) {
+              color = 'inherit'
+              signo = ''
+            }
+
             return (
               <li key={m.id} style={estilos.item}>
                 <div style={{ minWidth: 0 }}>
                   <div style={estilos.itemNombre}>
-                    {m.descripcion || (esIngreso ? 'Ingreso' : 'Gasto')}
+                    {esSalidaTransf
+                      ? `Transferencia${m.descripcion ? ': ' + m.descripcion : ''}`
+                      : m.descripcion || (esIngreso ? 'Ingreso' : 'Gasto')}
                   </div>
                   <div style={estilos.itemDetalle}>
-                    {fechaCorta(m.fecha)} · {m.cuenta?.nombre || 'Sin cuenta'}
+                    {fechaCorta(m.fecha)} ·{' '}
+                    {esSalidaTransf
+                      ? `${m.cuenta?.nombre || '?'} -> ${nombreDestino(m)}`
+                      : m.cuenta?.nombre || 'Sin cuenta'}
                     {m.categoria?.nombre ? ` · ${m.categoria.nombre}` : ''}
                   </div>
                 </div>
                 <div style={estilos.derecha}>
-                  <span style={{ ...estilos.itemMonto, color: esIngreso ? '#1e8449' : '#c0392b' }}>
-                    {esIngreso ? '+' : '-'} {formatoGs(m.monto)}
+                  <span style={{ ...estilos.itemMonto, color, opacity: esSalidaTransf ? 0.7 : 1 }}>
+                    {signo} {formatoGs(m.monto)}
                   </span>
                   <button
                     style={estilos.botonBorrar}
-                    onClick={() => borrarMovimiento(m.id)}
+                    onClick={() => borrarMovimiento(m)}
                     title="Borrar"
                   >
                     x
@@ -241,32 +348,46 @@ const estilos = {
     marginBottom: 20,
   },
   fila: { display: 'flex', gap: 8 },
+  label: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.8rem', opacity: 0.75 },
   tab: {
     flex: 1,
-    padding: '10px',
+    padding: '10px 6px',
     borderRadius: 8,
     border: '1px solid #8886',
     background: 'transparent',
     color: 'inherit',
     cursor: 'pointer',
+    fontSize: '0.85rem',
   },
   tabActivoGasto: {
     flex: 1,
-    padding: '10px',
+    padding: '10px 6px',
     borderRadius: 8,
     border: '1px solid #c0392b',
     background: '#c0392b',
     color: 'white',
     cursor: 'pointer',
+    fontSize: '0.85rem',
   },
   tabActivoIngreso: {
     flex: 1,
-    padding: '10px',
+    padding: '10px 6px',
     borderRadius: 8,
     border: '1px solid #1e8449',
     background: '#1e8449',
     color: 'white',
     cursor: 'pointer',
+    fontSize: '0.85rem',
+  },
+  tabActivoTransf: {
+    flex: 1,
+    padding: '10px 6px',
+    borderRadius: 8,
+    border: '1px solid #2d6cdf',
+    background: '#2d6cdf',
+    color: 'white',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
   },
   input: {
     padding: '10px 12px',
@@ -275,6 +396,8 @@ const estilos = {
     borderRadius: 8,
     background: 'transparent',
     color: 'inherit',
+    width: '100%',
+    boxSizing: 'border-box',
   },
   botonPrimario: {
     padding: '10px 14px',
