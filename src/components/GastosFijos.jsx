@@ -3,13 +3,14 @@ import { supabase } from '../lib/supabase'
 import { formatoGs, hoyISO, fechaCorta } from '../lib/formato'
 import { calcularVencimientos, diasHasta } from '../lib/recurrencia'
 
-export default function GastosFijos({ cuentas, categorias, onCambio }) {
+export default function GastosFijos({ cuentas, categorias, version, onCambio }) {
   const [reglas, setReglas] = useState([])
   const [pagos, setPagos] = useState([]) // movimientos ya confirmados de gastos fijos
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [mostrarForm, setMostrarForm] = useState(false)
   const [verReglas, setVerReglas] = useState(false)
+  const [fechasPago, setFechasPago] = useState({}) // fecha elegida por cada vencimiento
 
   // Formulario
   const [descripcion, setDescripcion] = useState('')
@@ -25,7 +26,7 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
 
   useEffect(() => {
     cargar()
-  }, [])
+  }, [version])
 
   useEffect(() => {
     if (!cuentaId && cuentas.length > 0) setCuentaId(cuentas[0].id)
@@ -37,7 +38,7 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
 
     const [resReglas, resPagos] = await Promise.all([
       supabase.from('gasto_fijo').select('*').eq('activo', true).order('created_at'),
-      supabase.from('movimiento').select('id, gasto_fijo_id, fecha').not('gasto_fijo_id', 'is', null),
+      supabase.from('movimiento').select('id, gasto_fijo_id, fecha, numero_cuota').not('gasto_fijo_id', 'is', null),
     ])
 
     if (resReglas.error) setError(resReglas.error.message)
@@ -74,41 +75,38 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
       setTienePlazo(false)
       setFechaInicio(hoyISO())
       setMostrarForm(false)
-      await cargar()
+      if (onCambio) onCambio()
     }
 
     setGuardando(false)
   }
 
-  async function confirmarPago(regla, vencimiento, totalCuotas) {
+  async function confirmarPago(regla, vencimiento, totalCuotas, fechaPago) {
     setError(null)
 
-    // Se crea el movimiento con la FECHA PROGRAMADA, no la de hoy.
+    // Se registra con la FECHA REAL en que se pago (hoy).
+    // El vinculo con el vencimiento se guarda en numero_cuota, no en la fecha.
     const { error } = await supabase.from('movimiento').insert({
       cuenta_id: regla.cuenta_id,
       categoria_id: regla.categoria_id,
       gasto_fijo_id: regla.id,
       tipo: 'gasto',
       monto: regla.monto,
-      fecha: vencimiento.fecha,
+      fecha: fechaPago || hoyISO(),
       descripcion: regla.descripcion,
       estado: 'pagado',
-      numero_cuota: regla.tiene_plazo ? vencimiento.numero : null,
-      total_cuotas: regla.tiene_plazo ? totalCuotas : null,
+      numero_cuota: vencimiento.numero,
+      total_cuotas: totalCuotas,
     })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      await cargar()
-      if (onCambio) onCambio()
-    }
+    if (error) setError(error.message)
+    else if (onCambio) onCambio()
   }
 
   async function desactivarRegla(id) {
     const { error } = await supabase.from('gasto_fijo').update({ activo: false }).eq('id', id)
     if (error) setError(error.message)
-    else await cargar()
+    else if (onCambio) onCambio()
   }
 
   // ---- Calculo de los vencimientos pendientes ----
@@ -119,7 +117,9 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
     const totalCuotas = regla.tiene_plazo ? regla.cantidad_cuotas : null
 
     for (const v of vencimientos) {
-      const yaPagado = pagos.some((p) => p.gasto_fijo_id === regla.id && p.fecha === v.fecha)
+      const yaPagado = pagos.some(
+        (p) => p.gasto_fijo_id === regla.id && p.numero_cuota === v.numero
+      )
       if (!yaPagado) {
         pendientes.push({ regla, vencimiento: v, totalCuotas, dias: diasHasta(v.fecha) })
       }
@@ -315,6 +315,7 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
       ) : (
         <ul style={estilos.lista}>
           {visibles.map((p) => {
+            const clave = `${p.regla.id}-${p.vencimiento.numero}`
             const vencido = p.dias < 0
             const urgente = p.dias >= 0 && p.dias <= 3
 
@@ -325,7 +326,7 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
 
             return (
               <li
-                key={`${p.regla.id}-${p.vencimiento.fecha}`}
+                key={clave}
                 style={{
                   ...estilos.item,
                   borderColor: vencido ? '#c0392b' : urgente ? '#d68910' : '#8884',
@@ -348,9 +349,25 @@ export default function GastosFijos({ cuentas, categorias, onCambio }) {
                 </div>
                 <div style={estilos.derecha}>
                   <span style={estilos.itemMonto}>{formatoGs(p.regla.monto)}</span>
+                  <input
+                    style={estilos.inputFecha}
+                    type="date"
+                    title="Fecha en que se pago"
+                    value={fechasPago[clave] || hoyISO()}
+                    onChange={(e) =>
+                      setFechasPago({ ...fechasPago, [clave]: e.target.value })
+                    }
+                  />
                   <button
                     style={estilos.botonConfirmar}
-                    onClick={() => confirmarPago(p.regla, p.vencimiento, p.totalCuotas)}
+                    onClick={() =>
+                      confirmarPago(
+                        p.regla,
+                        p.vencimiento,
+                        p.totalCuotas,
+                        fechasPago[clave] || hoyISO()
+                      )
+                    }
                   >
                     Pagar
                   </button>
@@ -436,11 +453,20 @@ const estilos = {
     padding: '12px 14px',
     border: '1px solid #8884',
     borderRadius: 12,
+    flexWrap: 'wrap',
   },
   itemNombre: { fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   itemDetalle: { fontSize: '0.8rem', opacity: 0.6, marginTop: 2, textTransform: 'capitalize' },
-  derecha: { display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap' },
+  derecha: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
   itemMonto: { fontWeight: 600 },
+  inputFecha: {
+    padding: '5px 8px',
+    fontSize: '0.8rem',
+    border: '1px solid #8886',
+    borderRadius: 6,
+    background: 'transparent',
+    color: 'inherit',
+  },
   botonBorrar: {
     border: '1px solid #8886',
     background: 'transparent',
