@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
+import Resumen from './components/Resumen'
 import Cuentas from './components/Cuentas'
 import Movimientos from './components/Movimientos'
 import Categorias from './components/Categorias'
@@ -93,6 +94,7 @@ export default function App() {
 
       <p style={estilos.email}>{sesion.user.email}</p>
 
+      <Resumen version={version} />
       <Cuentas cuentas={cuentas} cargando={cargandoCuentas} onCambio={refrescar} />
       <Movimientos cuentas={cuentas} categorias={categorias} version={version} onCambio={refrescar} />
       <GastosFijos cuentas={cuentas} categorias={categorias} version={version} onCambio={refrescar} />
