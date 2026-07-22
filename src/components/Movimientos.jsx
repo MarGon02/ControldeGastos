@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatoGs, hoyISO, fechaCorta } from '../lib/formato'
 
-export default function Movimientos({ cuentas, categorias, onCambio }) {
+export default function Movimientos({ cuentas, categorias, version, onCambio }) {
   const [movimientos, setMovimientos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -20,7 +20,7 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
 
   useEffect(() => {
     cargarMovimientos()
-  }, [])
+  }, [version])
 
   useEffect(() => {
     if (!cuentaId && cuentas.length > 0) setCuentaId(cuentas[0].id)
@@ -298,7 +298,8 @@ export default function Movimientos({ cuentas, categorias, onCambio }) {
                   <div style={estilos.itemNombre}>
                     {esSalidaTransf
                       ? `Transferencia${m.descripcion ? ': ' + m.descripcion : ''}`
-                      : m.descripcion || (esIngreso ? 'Ingreso' : 'Gasto')}
+                      : (m.descripcion || (esIngreso ? 'Ingreso' : 'Gasto')) +
+                        (m.total_cuotas ? ` (${m.numero_cuota}/${m.total_cuotas})` : '')}
                   </div>
                   <div style={estilos.itemDetalle}>
                     {fechaCorta(m.fecha)} ·{' '}
