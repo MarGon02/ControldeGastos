@@ -161,7 +161,7 @@ export default function Cuentas({ cuentas, cargando, version, onCambio }) {
                 <div style={estilos.itemTipo}>{c.tipo}</div>
               </div>
               <div style={estilos.derecha}>
-                <span style={estilos.itemMonto}>{formatoGs(c.saldo)}</span>
+                <span className="monto" style={estilos.itemMonto}>{formatoGs(c.saldo)}</span>
                 <button style={estilos.botonIcono} onClick={() => abrirEdicion(c)} title="Editar">
                   ✎
                 </button>
@@ -217,46 +217,46 @@ const estilos = {
   total: { margin: '4px 0 0', opacity: 0.7, fontSize: '0.9rem' },
   form: {
     display: 'flex', flexDirection: 'column', gap: 10, padding: 16,
-    border: '1px solid #8884', borderRadius: 12, marginBottom: 20,
+    border: '1px solid var(--border)', borderRadius: 10, marginBottom: 20,
   },
   avisoEdicion: {
-    fontSize: '0.8rem', opacity: 0.7, paddingBottom: 6, borderBottom: '1px solid #8884',
+    fontSize: '0.8rem', opacity: 0.7, paddingBottom: 6, borderBottom: '1px solid var(--border)',
   },
   fila: { display: 'flex', gap: 8 },
   label: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.8rem', opacity: 0.75 },
   input: {
-    padding: '10px 12px', fontSize: '1rem', border: '1px solid #8886', borderRadius: 8,
-    background: 'transparent', color: 'inherit', width: '100%', boxSizing: 'border-box',
+    padding: '10px 12px', fontSize: '1rem', border: '1px solid var(--border-strong)', borderRadius: 8,
+    background: 'var(--surface)', color: 'var(--text)', width: '100%', boxSizing: 'border-box',
   },
   botonPrimario: {
     padding: '10px 14px', fontSize: '0.95rem', border: 'none', borderRadius: 8,
-    background: '#2d6cdf', color: 'white', cursor: 'pointer', whiteSpace: 'nowrap',
+    background: 'var(--primary)', color: 'var(--on-primary)', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   botonPrimarioAncho: {
     flex: 2, padding: '10px 14px', fontSize: '0.95rem', border: 'none', borderRadius: 8,
-    background: '#2d6cdf', color: 'white', cursor: 'pointer',
+    background: 'var(--primary)', color: 'var(--on-primary)', cursor: 'pointer',
   },
   botonSecundario: {
-    padding: '9px 12px', fontSize: '0.85rem', border: '1px solid #8886', borderRadius: 8,
-    background: 'transparent', color: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+    padding: '9px 12px', fontSize: '0.85rem', border: '1px solid var(--border-strong)', borderRadius: 8,
+    background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   botonSecundarioAncho: {
-    flex: 1, padding: '10px 14px', fontSize: '0.95rem', border: '1px solid #8886',
-    borderRadius: 8, background: 'transparent', color: 'inherit', cursor: 'pointer',
+    flex: 1, padding: '10px 14px', fontSize: '0.95rem', border: '1px solid var(--border-strong)',
+    borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
   },
   lista: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 },
   item: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-    padding: '14px 16px', border: '1px solid #8884', borderRadius: 12, flexWrap: 'wrap',
+    padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 10, flexWrap: 'wrap',
   },
   itemNombre: { fontWeight: 600 },
   itemTipo: { fontSize: '0.8rem', opacity: 0.6, textTransform: 'capitalize' },
   derecha: { display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' },
   itemMonto: { fontWeight: 600 },
   botonIcono: {
-    border: '1px solid #8886', background: 'transparent', color: 'inherit', borderRadius: 6,
+    border: '1px solid var(--border-strong)', background: 'var(--surface)', color: 'var(--text)', borderRadius: 6,
     width: 28, height: 28, cursor: 'pointer', opacity: 0.6, fontSize: '0.9rem', lineHeight: 1,
   },
   gris: { opacity: 0.6 },
-  error: { color: '#c0392b', fontSize: '0.9rem' },
+  error: { color: 'var(--gasto)', fontSize: '0.9rem' },
 }

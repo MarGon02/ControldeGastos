@@ -131,7 +131,7 @@ export default function Categorias({ categorias, cargando, onCambio }) {
                       key={c.id}
                       style={{
                         ...estilos.chip,
-                        borderColor: editandoId === c.id ? '#2d6cdf' : '#8884',
+                        borderColor: editandoId === c.id ? 'var(--primary)' : 'var(--border)',
                       }}
                     >
                       <span>{c.nombre}</span>
@@ -158,7 +158,7 @@ export default function Categorias({ categorias, cargando, onCambio }) {
                       key={c.id}
                       style={{
                         ...estilos.chip,
-                        borderColor: editandoId === c.id ? '#2d6cdf' : '#8884',
+                        borderColor: editandoId === c.id ? 'var(--primary)' : 'var(--border)',
                       }}
                     >
                       <span>{c.nombre}</span>
@@ -192,18 +192,18 @@ const estilos = {
   subtitulo: { margin: '0 0 8px', fontSize: '0.85rem', opacity: 0.6, textTransform: 'uppercase' },
   aviso: {
     padding: 16,
-    border: '1px dashed #8886',
-    borderRadius: 12,
+    border: '1px dashed var(--border-strong)',
+    borderRadius: 10,
     marginBottom: 16,
   },
   form: { display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   input: {
     padding: '9px 12px',
     fontSize: '0.95rem',
-    border: '1px solid #8886',
+    border: '1px solid var(--border-strong)',
     borderRadius: 8,
-    background: 'transparent',
-    color: 'inherit',
+    background: 'var(--surface)',
+    color: 'var(--text)',
     flex: '1 1 140px',
   },
   botonPrimario: {
@@ -211,18 +211,18 @@ const estilos = {
     fontSize: '0.9rem',
     border: 'none',
     borderRadius: 8,
-    background: '#2d6cdf',
-    color: 'white',
+    background: 'var(--primary)',
+    color: 'var(--on-primary)',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
   botonSecundario: {
     padding: '8px 12px',
     fontSize: '0.85rem',
-    border: '1px solid #8886',
+    border: '1px solid var(--border-strong)',
     borderRadius: 8,
-    background: 'transparent',
-    color: 'inherit',
+    background: 'var(--surface)',
+    color: 'var(--text)',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -234,14 +234,14 @@ const estilos = {
     alignItems: 'center',
     gap: 6,
     padding: '5px 8px 5px 12px',
-    border: '1px solid #8884',
+    border: '1px solid var(--border)',
     borderRadius: 999,
     fontSize: '0.85rem',
   },
   botonBorrar: {
     border: 'none',
-    background: 'transparent',
-    color: 'inherit',
+    background: 'var(--surface)',
+    color: 'var(--text)',
     cursor: 'pointer',
     opacity: 0.5,
     padding: 0,
@@ -249,5 +249,5 @@ const estilos = {
     lineHeight: 1,
   },
   gris: { opacity: 0.6, fontSize: '0.9rem', margin: 0 },
-  error: { color: '#c0392b', fontSize: '0.9rem' },
+  error: { color: 'var(--gasto)', fontSize: '0.9rem' },
 }

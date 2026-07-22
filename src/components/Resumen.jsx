@@ -113,18 +113,18 @@ export default function Resumen({ version }) {
           <div style={estilos.tarjetas}>
             <div style={estilos.tarjeta}>
               <div style={estilos.etiqueta}>Ingresos</div>
-              <div style={{ ...estilos.numero, color: '#1e8449' }}>{formatoGs(totalIngresos)}</div>
+              <div className="monto" style={{ ...estilos.numero, color: 'var(--ingreso)' }}>{formatoGs(totalIngresos)}</div>
             </div>
             <div style={estilos.tarjeta}>
               <div style={estilos.etiqueta}>Gastos</div>
-              <div style={{ ...estilos.numero, color: '#c0392b' }}>{formatoGs(totalGastos)}</div>
+              <div className="monto" style={{ ...estilos.numero, color: 'var(--gasto)' }}>{formatoGs(totalGastos)}</div>
             </div>
             <div style={estilos.tarjeta}>
               <div style={estilos.etiqueta}>Balance</div>
               <div
                 style={{
                   ...estilos.numero,
-                  color: balance >= 0 ? '#1e8449' : '#c0392b',
+                  color: balance >= 0 ? 'var(--ingreso)' : 'var(--gasto)',
                 }}
               >
                 {balance >= 0 ? '+' : '-'} {formatoGs(Math.abs(balance))}
@@ -144,7 +144,7 @@ export default function Resumen({ version }) {
                   <li key={nombre} style={estilos.itemCategoria}>
                     <div style={estilos.filaCategoria}>
                       <span style={estilos.nombreCategoria}>{nombre}</span>
-                      <span style={estilos.montoCategoria}>
+                      <span className="monto" style={estilos.montoCategoria}>
                         {formatoGs(monto)}{' '}
                         <span style={estilos.porcentaje}>{porcentaje.toFixed(0)}%</span>
                       </span>
@@ -177,7 +177,7 @@ const estilos = {
     fontSize: '0.65rem',
     textTransform: 'uppercase',
     opacity: 0.5,
-    border: '1px solid #8886',
+    border: '1px solid var(--border-strong)',
     borderRadius: 999,
     padding: '2px 8px',
     fontWeight: 400,
@@ -186,9 +186,9 @@ const estilos = {
     width: 34,
     height: 34,
     borderRadius: 8,
-    border: '1px solid #8886',
-    background: 'transparent',
-    color: 'inherit',
+    border: '1px solid var(--border-strong)',
+    background: 'var(--surface)',
+    color: 'var(--text)',
     cursor: 'pointer',
     fontSize: '1rem',
   },
@@ -196,8 +196,8 @@ const estilos = {
   tarjeta: {
     flex: '1 1 130px',
     padding: '14px 16px',
-    border: '1px solid #8884',
-    borderRadius: 12,
+    border: '1px solid var(--border)',
+    borderRadius: 10,
   },
   etiqueta: { fontSize: '0.75rem', opacity: 0.6, textTransform: 'uppercase', marginBottom: 6 },
   numero: { fontSize: '1.05rem', fontWeight: 700 },
@@ -217,14 +217,14 @@ const estilos = {
   barraFondo: {
     height: 6,
     borderRadius: 999,
-    background: '#8883',
+    background: 'var(--surface-2)',
     overflow: 'hidden',
   },
   barra: {
     height: '100%',
     borderRadius: 999,
-    background: '#2d6cdf',
+    background: 'var(--primary)',
   },
   gris: { opacity: 0.6 },
-  error: { color: '#c0392b', fontSize: '0.9rem' },
+  error: { color: 'var(--gasto)', fontSize: '0.9rem' },
 }

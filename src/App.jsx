@@ -1,21 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
-import Resumen from './components/Resumen'
+import Layout from './components/Layout'
+import Inicio from './pages/Inicio'
 import Cuentas from './components/Cuentas'
-import Movimientos from './components/Movimientos'
 import Categorias from './components/Categorias'
+import Movimientos from './components/Movimientos'
 import GastosFijos from './components/GastosFijos'
+import Resumen from './components/Resumen'
+import { ui } from './lib/ui'
 
 export default function App() {
   const [sesion, setSesion] = useState(null)
   const [cargandoSesion, setCargandoSesion] = useState(true)
+  const [pagina, setPagina] = useState('inicio')
 
   const [cuentas, setCuentas] = useState([])
   const [cargandoCuentas, setCargandoCuentas] = useState(true)
   const [categorias, setCategorias] = useState([])
   const [cargandoCategorias, setCargandoCategorias] = useState(true)
-  const [version, setVersion] = useState(0) // se incrementa para forzar recarga
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -25,14 +29,11 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_evento, sesion) => {
-      setSesion(sesion)
-    })
+    } = supabase.auth.onAuthStateChange((_evento, sesion) => setSesion(sesion))
 
     return () => subscription.unsubscribe()
   }, [])
 
-  // Carga las cuentas y les calcula el saldo real usando los movimientos.
   const cargarCuentas = useCallback(async () => {
     setCargandoCuentas(true)
 
@@ -41,17 +42,16 @@ export default function App() {
       supabase.from('movimiento').select('cuenta_id, tipo, monto').eq('estado', 'pagado'),
     ])
 
-    const listaCuentas = resCuentas.data || []
+    const lista = resCuentas.data || []
     const movs = resMovs.data || []
 
-    const conSaldo = listaCuentas.map((c) => {
+    const conSaldo = lista.map((c) => {
       const delta = movs
         .filter((m) => m.cuenta_id === c.id)
         .reduce((suma, m) => {
           const entra = m.tipo === 'ingreso' || m.tipo === 'transferencia_entrada'
           return suma + (entra ? Number(m.monto) : -Number(m.monto))
         }, 0)
-
       return { ...c, saldo: Number(c.saldo_inicial) + delta }
     })
 
@@ -76,54 +76,56 @@ export default function App() {
   const refrescar = () => setVersion((v) => v + 1)
 
   if (cargandoSesion) {
-    return <p style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>Cargando...</p>
+    return <p style={{ padding: '2rem', color: 'var(--text-muted)' }}>Cargando...</p>
   }
 
-  if (!sesion) {
-    return <Auth />
-  }
+  if (!sesion) return <Auth />
+
+  const props = { cuentas, categorias, version, onCambio: refrescar }
 
   return (
-    <main style={estilos.main}>
-      <header style={estilos.header}>
-        <h1 style={estilos.titulo}>Control de Gastos</h1>
-        <button style={estilos.botonSalir} onClick={() => supabase.auth.signOut()}>
-          Salir
-        </button>
-      </header>
+    <Layout
+      pagina={pagina}
+      setPagina={setPagina}
+      email={sesion.user.email}
+      onSalir={() => supabase.auth.signOut()}
+    >
+      {pagina === 'inicio' && <Inicio cuentas={cuentas} version={version} irA={setPagina} />}
 
-      <p style={estilos.email}>{sesion.user.email}</p>
+      {pagina === 'movimientos' && (
+        <>
+          <h1 style={{ ...ui.tituloPagina, marginBottom: 20 }}>Movimientos</h1>
+          <Movimientos {...props} />
+        </>
+      )}
 
-      <Resumen version={version} />
-      <Cuentas cuentas={cuentas} cargando={cargandoCuentas} version={version} onCambio={refrescar} />
-      <Movimientos cuentas={cuentas} categorias={categorias} version={version} onCambio={refrescar} />
-      <GastosFijos cuentas={cuentas} categorias={categorias} version={version} onCambio={refrescar} />
-      <Categorias categorias={categorias} cargando={cargandoCategorias} onCambio={refrescar} />
-    </main>
+      {pagina === 'cuentas' && (
+        <>
+          <h1 style={{ ...ui.tituloPagina, marginBottom: 20 }}>Cuentas</h1>
+          <Cuentas cuentas={cuentas} cargando={cargandoCuentas} version={version} onCambio={refrescar} />
+        </>
+      )}
+
+      {pagina === 'categorias' && (
+        <>
+          <h1 style={{ ...ui.tituloPagina, marginBottom: 20 }}>Categorias</h1>
+          <Categorias categorias={categorias} cargando={cargandoCategorias} onCambio={refrescar} />
+        </>
+      )}
+
+      {pagina === 'fijos' && (
+        <>
+          <h1 style={{ ...ui.tituloPagina, marginBottom: 20 }}>Gastos fijos</h1>
+          <GastosFijos {...props} />
+        </>
+      )}
+
+      {pagina === 'reportes' && (
+        <>
+          <h1 style={{ ...ui.tituloPagina, marginBottom: 20 }}>Reportes</h1>
+          <Resumen version={version} />
+        </>
+      )}
+    </Layout>
   )
-}
-
-const estilos = {
-  main: {
-    fontFamily: 'system-ui, sans-serif',
-    maxWidth: 640,
-    margin: '0 auto',
-    padding: '2rem 1rem 4rem',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  titulo: { margin: 0, fontSize: '1.4rem' },
-  botonSalir: {
-    padding: '8px 14px',
-    borderRadius: 8,
-    border: '1px solid #8886',
-    background: 'transparent',
-    color: 'inherit',
-    cursor: 'pointer',
-  },
-  email: { opacity: 0.6, fontSize: '0.85rem', marginTop: 4, marginBottom: 28 },
 }

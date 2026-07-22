@@ -1,2 +1,80 @@
-:root { color-scheme: light dark; }
-body { margin: 0; }
+/* ============================================================
+   TOKENS DE DISENO
+   Todos los colores viven aca. Para agregar modo oscuro mas
+   adelante, alcanza con duplicar este bloque bajo un selector
+   (por ejemplo [data-tema="oscuro"]) y cambiar los valores.
+   ============================================================ */
+:root {
+  /* Superficies */
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f0f0ed;
+
+  /* Texto */
+  --text: #1a1a17;
+  --text-muted: #6e6e68;
+  --text-faint: #9a9a93;
+
+  /* Lineas */
+  --border: #e4e4e0;
+  --border-strong: #cfcfc9;
+
+  /* Accion */
+  --primary: #0d5c63;
+  --primary-hover: #0a4a50;
+  --primary-soft: #e3efef;
+  --on-primary: #ffffff;
+
+  /* Semanticos: el color solo se usa cuando significa algo */
+  --ingreso: #1b7f4b;
+  --gasto: #b4342a;
+  --alerta: #b0700d;
+  --alerta-soft: #fdf4e3;
+
+  /* Tipografia */
+  --fuente: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --fuente-mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+
+  /* Medidas */
+  --radio: 10px;
+  --radio-sm: 7px;
+  --sidebar-ancho: 236px;
+  --header-alto: 60px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fuente);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.01em; }
+
+button { font-family: inherit; }
+input, select { font-family: inherit; }
+
+/* Los montos siempre en monoespaciada: los digitos se alinean
+   en columna y se comparan de un vistazo. */
+.monto {
+  font-family: var(--fuente-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Accesibilidad: foco visible al navegar con teclado */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

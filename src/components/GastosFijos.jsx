@@ -363,7 +363,7 @@ export default function GastosFijos({ cuentas, categorias, version, onCambio }) 
                     key={r.id}
                     style={{
                       ...estilos.item,
-                      borderColor: editandoId === r.id ? '#2d6cdf' : '#8884',
+                      borderColor: editandoId === r.id ? 'var(--primary)' : 'var(--border)',
                     }}
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
@@ -376,7 +376,7 @@ export default function GastosFijos({ cuentas, categorias, version, onCambio }) 
                       </div>
                     </div>
                     <div style={estilos.derecha}>
-                      <span style={estilos.itemMonto}>{formatoGs(r.monto)}</span>
+                      <span className="monto" style={estilos.itemMonto}>{formatoGs(r.monto)}</span>
                       <button
                         style={estilos.botonIcono}
                         onClick={() => abrirEdicion(r)}
@@ -424,7 +424,7 @@ export default function GastosFijos({ cuentas, categorias, version, onCambio }) 
                 key={clave}
                 style={{
                   ...estilos.item,
-                  borderColor: vencido ? '#c0392b' : urgente ? '#d68910' : '#8884',
+                  borderColor: vencido ? 'var(--gasto)' : urgente ? 'var(--alerta)' : 'var(--border)',
                 }}
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -435,7 +435,7 @@ export default function GastosFijos({ cuentas, categorias, version, onCambio }) 
                   <div
                     style={{
                       ...estilos.itemDetalle,
-                      color: vencido ? '#c0392b' : urgente ? '#d68910' : 'inherit',
+                      color: vencido ? 'var(--gasto)' : urgente ? 'var(--alerta)' : 'inherit',
                       opacity: vencido || urgente ? 1 : 0.6,
                     }}
                   >
@@ -443,7 +443,7 @@ export default function GastosFijos({ cuentas, categorias, version, onCambio }) 
                   </div>
                 </div>
                 <div style={estilos.derecha}>
-                  <span style={estilos.itemMonto}>{formatoGs(p.regla.monto)}</span>
+                  <span className="monto" style={estilos.itemMonto}>{formatoGs(p.regla.monto)}</span>
                   <input
                     style={estilos.inputFecha}
                     type="date"
@@ -483,60 +483,60 @@ const estilos = {
   subtitulo: { margin: '24px 0 12px', fontSize: '0.85rem', opacity: 0.6, textTransform: 'uppercase' },
   form: {
     display: 'flex', flexDirection: 'column', gap: 10, padding: 16,
-    border: '1px solid #8884', borderRadius: 12, marginBottom: 20,
+    border: '1px solid var(--border)', borderRadius: 10, marginBottom: 20,
   },
   avisoEdicion: {
-    fontSize: '0.8rem', opacity: 0.8, paddingBottom: 8, borderBottom: '1px solid #8884',
+    fontSize: '0.8rem', opacity: 0.8, paddingBottom: 8, borderBottom: '1px solid var(--border)',
   },
   avisoBloqueo: {
     marginTop: 8, padding: '8px 10px', borderRadius: 8,
-    border: '1px solid #d68910', color: '#d68910', lineHeight: 1.4,
+    border: '1px solid var(--alerta)', color: 'var(--alerta)', lineHeight: 1.4,
   },
   label: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.8rem', opacity: 0.75 },
   checkbox: { display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.9rem' },
   fila: { display: 'flex', gap: 8 },
   input: {
-    padding: '10px 12px', fontSize: '1rem', border: '1px solid #8886', borderRadius: 8,
-    background: 'transparent', color: 'inherit', width: '100%', boxSizing: 'border-box',
+    padding: '10px 12px', fontSize: '1rem', border: '1px solid var(--border-strong)', borderRadius: 8,
+    background: 'var(--surface)', color: 'var(--text)', width: '100%', boxSizing: 'border-box',
   },
   inputFecha: {
-    padding: '5px 8px', fontSize: '0.8rem', border: '1px solid #8886', borderRadius: 6,
-    background: 'transparent', color: 'inherit',
+    padding: '5px 8px', fontSize: '0.8rem', border: '1px solid var(--border-strong)', borderRadius: 6,
+    background: 'var(--surface)', color: 'var(--text)',
   },
   botonPrimario: {
     padding: '10px 14px', fontSize: '0.95rem', border: 'none', borderRadius: 8,
-    background: '#2d6cdf', color: 'white', cursor: 'pointer', whiteSpace: 'nowrap',
+    background: 'var(--primary)', color: 'var(--on-primary)', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   botonPrimarioAncho: {
     flex: 2, padding: '10px 14px', fontSize: '0.95rem', border: 'none', borderRadius: 8,
-    background: '#2d6cdf', color: 'white', cursor: 'pointer',
+    background: 'var(--primary)', color: 'var(--on-primary)', cursor: 'pointer',
   },
   botonSecundario: {
-    padding: '9px 12px', fontSize: '0.85rem', border: '1px solid #8886', borderRadius: 8,
-    background: 'transparent', color: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+    padding: '9px 12px', fontSize: '0.85rem', border: '1px solid var(--border-strong)', borderRadius: 8,
+    background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   botonSecundarioAncho: {
-    flex: 1, padding: '10px 14px', fontSize: '0.95rem', border: '1px solid #8886',
-    borderRadius: 8, background: 'transparent', color: 'inherit', cursor: 'pointer',
+    flex: 1, padding: '10px 14px', fontSize: '0.95rem', border: '1px solid var(--border-strong)',
+    borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', cursor: 'pointer',
   },
   botonConfirmar: {
     padding: '7px 12px', fontSize: '0.85rem', border: 'none', borderRadius: 8,
-    background: '#1e8449', color: 'white', cursor: 'pointer', whiteSpace: 'nowrap',
+    background: 'var(--ingreso)', color: 'var(--on-primary)', cursor: 'pointer', whiteSpace: 'nowrap',
   },
   bloqueReglas: { marginBottom: 8 },
   lista: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 },
   item: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-    padding: '12px 14px', border: '1px solid #8884', borderRadius: 12, flexWrap: 'wrap',
+    padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 10, flexWrap: 'wrap',
   },
   itemNombre: { fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   itemDetalle: { fontSize: '0.8rem', opacity: 0.6, marginTop: 2, textTransform: 'capitalize' },
   derecha: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
   itemMonto: { fontWeight: 600 },
   botonIcono: {
-    border: '1px solid #8886', background: 'transparent', color: 'inherit', borderRadius: 6,
+    border: '1px solid var(--border-strong)', background: 'var(--surface)', color: 'var(--text)', borderRadius: 6,
     width: 28, height: 28, cursor: 'pointer', opacity: 0.6, fontSize: '0.9rem', lineHeight: 1,
   },
   gris: { opacity: 0.6 },
-  error: { color: '#c0392b', fontSize: '0.9rem' },
+  error: { color: 'var(--gasto)', fontSize: '0.9rem' },
 }
