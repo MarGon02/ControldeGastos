@@ -4,6 +4,7 @@ import Auth from './components/Auth'
 import Cuentas from './components/Cuentas'
 import Movimientos from './components/Movimientos'
 import Categorias from './components/Categorias'
+import GastosFijos from './components/GastosFijos'
 
 export default function App() {
   const [sesion, setSesion] = useState(null)
@@ -94,6 +95,7 @@ export default function App() {
 
       <Cuentas cuentas={cuentas} cargando={cargandoCuentas} onCambio={refrescar} />
       <Movimientos cuentas={cuentas} categorias={categorias} onCambio={refrescar} />
+      <GastosFijos cuentas={cuentas} categorias={categorias} onCambio={refrescar} />
       <Categorias categorias={categorias} cargando={cargandoCategorias} onCambio={refrescar} />
     </main>
   )
