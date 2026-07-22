@@ -15,27 +15,30 @@ const MENU = [
   ]},
 ]
 
+const ANCHO_MINIMO = 900
+
 export default function Layout({ pagina, setPagina, email, onSalir, children }) {
-  const [abierto, setAbierto] = useState(false)
-  const [esAncho, setEsAncho] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 900 : true
-  )
+  const inicialAncho = typeof window !== 'undefined' ? window.innerWidth >= ANCHO_MINIMO : true
+
+  const [esAncho, setEsAncho] = useState(inicialAncho)
+  // En pantalla ancha arranca abierta; en celular arranca cerrada.
+  const [abierto, setAbierto] = useState(inicialAncho)
 
   useEffect(() => {
     function alRedimensionar() {
-      const ancho = window.innerWidth >= 900
-      setEsAncho(ancho)
-      if (ancho) setAbierto(false)
+      const ancho = window.innerWidth >= ANCHO_MINIMO
+      setEsAncho((previo) => {
+        if (previo !== ancho) setAbierto(ancho)
+        return ancho
+      })
     }
     window.addEventListener('resize', alRedimensionar)
     return () => window.removeEventListener('resize', alRedimensionar)
   }, [])
 
-  const sidebarVisible = esAncho || abierto
-
   function irA(id) {
     setPagina(id)
-    if (!esAncho) setAbierto(false)
+    if (!esAncho) setAbierto(false) // en celular se cierra al elegir
   }
 
   return (
@@ -46,7 +49,8 @@ export default function Layout({ pagina, setPagina, email, onSalir, children }) 
           <button
             style={estilos.hamburguesa}
             onClick={() => setAbierto(!abierto)}
-            aria-label="Abrir menu"
+            aria-label={abierto ? 'Ocultar menu' : 'Mostrar menu'}
+            aria-expanded={abierto}
           >
             <span style={estilos.linea} />
             <span style={estilos.linea} />
@@ -59,12 +63,16 @@ export default function Layout({ pagina, setPagina, email, onSalir, children }) 
         </div>
 
         <div style={estilos.headerDer}>
-          <span style={estilos.email} title={email}>{email}</span>
+          {/* En celular el email se oculta: no hay lugar y compite con el titulo.
+              Se muestra abajo, dentro de la barra lateral. */}
+          {esAncho && (
+            <span style={estilos.email} title={email}>{email}</span>
+          )}
           <button style={estilos.salir} onClick={onSalir}>Salir</button>
         </div>
       </header>
 
-      {/* ---------- FONDO OSCURO EN MOVIL ---------- */}
+      {/* ---------- FONDO OSCURO (solo celular) ---------- */}
       {abierto && !esAncho && (
         <div style={estilos.overlay} onClick={() => setAbierto(false)} />
       )}
@@ -73,39 +81,47 @@ export default function Layout({ pagina, setPagina, email, onSalir, children }) 
       <nav
         style={{
           ...estilos.sidebar,
-          transform: sidebarVisible ? 'translateX(0)' : 'translateX(-100%)',
+          transform: abierto ? 'translateX(0)' : 'translateX(-100%)',
           boxShadow: abierto && !esAncho ? '0 0 40px rgba(0,0,0,0.18)' : 'none',
         }}
+        aria-hidden={!abierto}
       >
-        {MENU.map((seccion) => (
-          <div key={seccion.grupo} style={estilos.grupo}>
-            <div style={estilos.grupoTitulo}>{seccion.grupo}</div>
-            {seccion.items.map((item) => {
-              const activo = pagina === item.id
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => irA(item.id)}
-                  style={{
-                    ...estilos.navItem,
-                    background: activo ? 'var(--primary-soft)' : 'transparent',
-                    color: activo ? 'var(--primary)' : 'var(--text)',
-                    fontWeight: activo ? 600 : 400,
-                  }}
-                >
-                  {item.etiqueta}
-                </button>
-              )
-            })}
-          </div>
-        ))}
+        <div>
+          {MENU.map((seccion) => (
+            <div key={seccion.grupo} style={estilos.grupo}>
+              <div style={estilos.grupoTitulo}>{seccion.grupo}</div>
+              {seccion.items.map((item) => {
+                const activo = pagina === item.id
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => irA(item.id)}
+                    style={{
+                      ...estilos.navItem,
+                      background: activo ? 'var(--primary-soft)' : 'transparent',
+                      color: activo ? 'var(--primary)' : 'var(--text)',
+                      fontWeight: activo ? 600 : 400,
+                    }}
+                  >
+                    {item.etiqueta}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* El email vive aca en celular */}
+        {!esAncho && (
+          <div style={estilos.pieSidebar} title={email}>{email}</div>
+        )}
       </nav>
 
       {/* ---------- CONTENIDO ---------- */}
       <main
         style={{
           ...estilos.main,
-          marginLeft: esAncho ? 'var(--sidebar-ancho)' : 0,
+          marginLeft: esAncho && abierto ? 'var(--sidebar-ancho)' : 0,
         }}
       >
         <div style={estilos.contenedor}>{children}</div>
@@ -123,8 +139,8 @@ const estilos = {
     height: 'var(--header-alto)',
     display: 'flex',
     alignItems: 'center',
-    gap: 12,
-    padding: '0 16px',
+    gap: 10,
+    padding: '0 12px',
     background: 'var(--surface)',
     borderBottom: '1px solid var(--border)',
     zIndex: 30,
@@ -135,6 +151,7 @@ const estilos = {
     display: 'flex',
     justifyContent: 'center',
     minWidth: 0,
+    overflow: 'hidden',
   },
   headerDer: {
     flex: '0 0 auto',
@@ -145,9 +162,11 @@ const estilos = {
   },
   marca: {
     fontWeight: 600,
-    fontSize: '0.98rem',
+    fontSize: 'clamp(0.85rem, 3.5vw, 0.98rem)',
     letterSpacing: '-0.01em',
     whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   hamburguesa: {
     width: 36,
@@ -162,6 +181,7 @@ const estilos = {
     alignItems: 'center',
     gap: 4,
     padding: 0,
+    flexShrink: 0,
   },
   linea: {
     display: 'block',
@@ -173,7 +193,7 @@ const estilos = {
   email: {
     fontSize: '0.8rem',
     color: 'var(--text-muted)',
-    maxWidth: 170,
+    maxWidth: 180,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -186,6 +206,7 @@ const estilos = {
     background: 'var(--surface)',
     color: 'var(--text)',
     cursor: 'pointer',
+    flexShrink: 0,
   },
   overlay: {
     position: 'fixed',
@@ -205,6 +226,9 @@ const estilos = {
     overflowY: 'auto',
     zIndex: 28,
     transition: 'transform 0.2s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
   },
   grupo: { marginBottom: 22 },
   grupoTitulo: {
@@ -226,6 +250,15 @@ const estilos = {
     borderRadius: 'var(--radio-sm)',
     fontSize: '0.9rem',
     cursor: 'pointer',
+  },
+  pieSidebar: {
+    fontSize: '0.76rem',
+    color: 'var(--text-faint)',
+    padding: '12px 10px 4px',
+    borderTop: '1px solid var(--border)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   main: {
     paddingTop: 'var(--header-alto)',
