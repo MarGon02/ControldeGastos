@@ -1,26 +1,24 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import Auth from './components/auth'
+import Auth from './components/Auth'
+import Cuentas from './components/Cuentas'
 
 export default function App() {
   const [sesion, setSesion] = useState(null)
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
-    // 1. Al cargar, buscamos si ya hay una sesion activa.
     supabase.auth.getSession().then(({ data }) => {
       setSesion(data.session)
       setCargando(false)
     })
 
-    // 2. Escuchamos cambios: login, logout, refresco de token.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_evento, sesion) => {
       setSesion(sesion)
     })
 
-    // 3. Limpiamos el listener cuando el componente se desmonta.
     return () => subscription.unsubscribe()
   }, [])
 
@@ -33,15 +31,42 @@ export default function App() {
   }
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 640, margin: '4rem auto', padding: '0 1rem' }}>
-      <h1>Control de Gastos</h1>
-      <p>Sesion iniciada como <strong>{sesion.user.email}</strong></p>
-      <button
-        onClick={() => supabase.auth.signOut()}
-        style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #ccc', cursor: 'pointer' }}
-      >
-        Cerrar sesion
-      </button>
+    <main style={estilos.main}>
+      <header style={estilos.header}>
+        <h1 style={estilos.titulo}>Control de Gastos</h1>
+        <button style={estilos.botonSalir} onClick={() => supabase.auth.signOut()}>
+          Salir
+        </button>
+      </header>
+
+      <p style={estilos.email}>{sesion.user.email}</p>
+
+      <Cuentas />
     </main>
   )
+}
+
+const estilos = {
+  main: {
+    fontFamily: 'system-ui, sans-serif',
+    maxWidth: 640,
+    margin: '0 auto',
+    padding: '2rem 1rem 4rem',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  titulo: { margin: 0, fontSize: '1.4rem' },
+  botonSalir: {
+    padding: '8px 14px',
+    borderRadius: 8,
+    border: '1px solid #8886',
+    background: 'transparent',
+    color: 'inherit',
+    cursor: 'pointer',
+  },
+  email: { opacity: 0.6, fontSize: '0.85rem', marginTop: 4, marginBottom: 28 },
 }
