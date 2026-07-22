@@ -21,21 +21,36 @@ export default function Categorias({ categorias, cargando, onCambio }) {
   const [nombre, setNombre] = useState('')
   const [tipo, setTipo] = useState('gasto')
   const [guardando, setGuardando] = useState(false)
+  const [editandoId, setEditandoId] = useState(null)
 
-  async function crearCategoria(e) {
+  async function guardar(e) {
     e.preventDefault()
     setGuardando(true)
     setError(null)
 
-    const { error } = await supabase.from('categoria').insert({ nombre, tipo })
+    const { error } = editandoId
+      ? await supabase.from('categoria').update({ nombre, tipo }).eq('id', editandoId)
+      : await supabase.from('categoria').insert({ nombre, tipo })
 
     if (error) setError(error.message)
     else {
       setNombre('')
+      setEditandoId(null)
       if (onCambio) onCambio()
     }
 
     setGuardando(false)
+  }
+
+  function abrirEdicion(c) {
+    setEditandoId(c.id)
+    setNombre(c.nombre)
+    setTipo(c.tipo)
+  }
+
+  function cancelarEdicion() {
+    setEditandoId(null)
+    setNombre('')
   }
 
   async function crearSugeridas() {
@@ -79,7 +94,7 @@ export default function Categorias({ categorias, cargando, onCambio }) {
             </div>
           )}
 
-          <form onSubmit={crearCategoria} style={estilos.form}>
+          <form onSubmit={guardar} style={estilos.form}>
             <input
               style={estilos.input}
               type="text"
@@ -93,8 +108,13 @@ export default function Categorias({ categorias, cargando, onCambio }) {
               <option value="ingreso">Ingreso</option>
             </select>
             <button style={estilos.botonPrimario} type="submit" disabled={guardando}>
-              Agregar
+              {editandoId ? 'Guardar' : 'Agregar'}
             </button>
+            {editandoId && (
+              <button style={estilos.botonSecundario} type="button" onClick={cancelarEdicion}>
+                Cancelar
+              </button>
+            )}
           </form>
 
           {error && <p style={estilos.error}>{error}</p>}
@@ -107,10 +127,19 @@ export default function Categorias({ categorias, cargando, onCambio }) {
               ) : (
                 <ul style={estilos.lista}>
                   {gastos.map((c) => (
-                    <li key={c.id} style={estilos.chip}>
+                    <li
+                      key={c.id}
+                      style={{
+                        ...estilos.chip,
+                        borderColor: editandoId === c.id ? '#2d6cdf' : '#8884',
+                      }}
+                    >
                       <span>{c.nombre}</span>
-                      <button style={estilos.botonBorrar} onClick={() => borrarCategoria(c.id)}>
-                        x
+                      <button style={estilos.botonBorrar} onClick={() => abrirEdicion(c)} title="Editar">
+                        ✎
+                      </button>
+                      <button style={estilos.botonBorrar} onClick={() => borrarCategoria(c.id)} title="Borrar">
+                        ×
                       </button>
                     </li>
                   ))}
@@ -125,10 +154,19 @@ export default function Categorias({ categorias, cargando, onCambio }) {
               ) : (
                 <ul style={estilos.lista}>
                   {ingresos.map((c) => (
-                    <li key={c.id} style={estilos.chip}>
+                    <li
+                      key={c.id}
+                      style={{
+                        ...estilos.chip,
+                        borderColor: editandoId === c.id ? '#2d6cdf' : '#8884',
+                      }}
+                    >
                       <span>{c.nombre}</span>
-                      <button style={estilos.botonBorrar} onClick={() => borrarCategoria(c.id)}>
-                        x
+                      <button style={estilos.botonBorrar} onClick={() => abrirEdicion(c)} title="Editar">
+                        ✎
+                      </button>
+                      <button style={estilos.botonBorrar} onClick={() => borrarCategoria(c.id)} title="Borrar">
+                        ×
                       </button>
                     </li>
                   ))}

@@ -95,7 +95,7 @@ export default function App() {
       <p style={estilos.email}>{sesion.user.email}</p>
 
       <Resumen version={version} />
-      <Cuentas cuentas={cuentas} cargando={cargandoCuentas} onCambio={refrescar} />
+      <Cuentas cuentas={cuentas} cargando={cargandoCuentas} version={version} onCambio={refrescar} />
       <Movimientos cuentas={cuentas} categorias={categorias} version={version} onCambio={refrescar} />
       <GastosFijos cuentas={cuentas} categorias={categorias} version={version} onCambio={refrescar} />
       <Categorias categorias={categorias} cargando={cargandoCategorias} onCambio={refrescar} />
